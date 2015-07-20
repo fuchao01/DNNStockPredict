@@ -18,14 +18,14 @@ def WaveX(data, gtheta):
 
 print("25% -- Loading Data")
 yv = "SH000001"
-ylist = {"SH000001": "sh", "SZ399005": "zxb", "SZ399006": "cyb"}
 data = pd.read_csv(yv + ".csv", index_col = ["Date"], parse_dates = ["Date"])
+ylist = {"SH000001": "sh", "SZ399006": "cyb", "SZ399005": "zxb"}
 putin = ts.get_h_data(yv[2:], start = str(dt.date.today() - dt.timedelta(60)), index = True)[::-1]
 updata = pd.DataFrame(putin[["close", "volume"]].values.astype(float), columns = ["Close", "Volume"], index = pd.Index(pd.to_datetime(putin.index), name = "Date"))
 putin = ts.get_realtime_quotes(ylist[yv])
-updata = updata.append(pd.DataFrame(putin[["price", "volume"]].values.astype(float), columns = ["Close", "Volume"], index = pd.Index(pd.to_datetime(putin["date"].values), name = "Date"))).drop_duplicates()
-data.update(updata)
-data = data.append(updata).drop_duplicates().sort_index()
+updata = updata.append(pd.DataFrame(putin[["price", "volume"]].values.astype(float), columns = ["Close", "Volume"], index = pd.Index(pd.to_datetime(putin["date"].values), name = "Date")))
+data = data.append(updata)
+data = data.groupby(data.index).last()
 data.to_csv(yv + ".csv")
 dao = np.log(data).replace([np.inf, -np.inf], np.nan).dropna()
 
@@ -48,8 +48,7 @@ for i in range(9):
     dnn.add(Dense(nhidlay, nhidlay, init = "uniform", W_regularizer=l2(0.001), activation = "tanh"))
 dnn.add(Dense(nhidlay, 1, init = "uniform", activation = "linear"))
 dnn.compile(loss = 'mse', optimizer = "sgd")
-dnn.fit(dat.values, yt.values, nb_epoch = 30, batch_size = 32, validation_data = (dav.values[:-period], y.values[:-period]))
-dnn.save_weights(yv + "_Period_" + str(period) + "_DNN_" + str(nhidlay) + "_10_T" + str(tratio) + ".HDF5")
+dnn.load_weights("SH000001_Period_15_DNN_1250_10_T0.6.HDF5")
 yhat = dnn.predict(dav.values).flatten()
 
 print("100% -- Make Investment Strategy")
